@@ -1,0 +1,114 @@
+name: 'RepoDynamics MetaUpdate'
+description: 'Update repository metadata.'
+author: 'Armin Ariamajd'
+branding:
+  icon: file-text
+  color: blue
+
+inputs:
+  repository:
+    description: 'The repository to update.'
+    required: false
+    default: ${{ github.repository }}
+  ref:
+    description: 'The ref to update.'
+    required: false
+    default: ${{ github.ref }}
+
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: 'Initialize'
+      shell: bash
+      run: |
+        # Initialize
+        printf "\n\n$(cat ${{github.action_path}}/logo.txt)\n\n\n"
+
+    - name: 'Setup Python'
+      shell: bash
+      run: |
+        # Setup Python
+        echo -e "\033[1;30;48;2;200;120;255m Setup Python "
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        cache: 'pip'
+        cache-dependency-path: '.github/workflows/requirements/**/*.txt'
+
+    - name: 'Install RepoDynamics'
+      shell: bash
+      run: |
+        # Install RepoDynamics
+        echo -e "\033[1;30;48;2;200;120;255m Install RepoDynamics "
+        echo "::group::Install RepoDynamics"
+        python -m pip install -r .github/workflows/requirements/meta.txt
+        echo "::endgroup::"
+        echo "::group::Display environment"
+        python -m pip list
+        echo "::endgroup::"
+
+    - name: 'Collect Source Files'
+      id: ext
+      shell: bash
+      env:
+        RD_META_FILES__REPO: ${{ inputs.repository }}
+        RD_META_FILES__REF: ${{ inputs.ref }}
+      run: |
+        # Collect Metadata
+        rd-print "Collect Source Files" heading meta
+        python -m repodynamics.actions meta files
+
+    - if: fromJSON(steps.ext.outputs.alt1).repo != ''
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ fromJSON(steps.ext.outputs.alt1).repo }}
+        ref: ${{ fromJSON(steps.ext.outputs.alt1).ref }}
+        sparse-checkout: ${{ fromJSON(steps.ext.outputs.alt1).path }}
+        sparse-checkout-cone-mode: false
+        path: ${{ fromJSON(steps.ext.outputs.alt1).path_dl }}
+    - if: fromJSON(steps.ext.outputs.alt1).repo != ''
+      shell: bash
+      run: |
+        # Display Downloaded Files
+        python -m repodynamics.actions meta files
+
+    - if: fromJSON(steps.ext.outputs.alt2).repo != ''
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ fromJSON(steps.ext.outputs.alt2).repo }}
+        ref: ${{ fromJSON(steps.ext.outputs.alt2).ref }}
+        sparse-checkout: ${{ fromJSON(steps.ext.outputs.alt2).path }}
+        sparse-checkout-cone-mode: false
+        path: ${{ fromJSON(steps.ext.outputs.alt2).path_dl }}
+    - if: fromJSON(steps.ext.outputs.alt2).repo != ''
+      shell: bash
+      run: |
+        # Display Downloaded Files
+        python -m repodynamics.actions meta files
+
+    - if: fromJSON(steps.ext.outputs.alt3).repo != ''
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ fromJSON(steps.ext.outputs.alt3).repo }}
+        ref: ${{ fromJSON(steps.ext.outputs.alt3).ref }}
+        sparse-checkout: ${{ fromJSON(steps.ext.outputs.alt3).path }}
+        sparse-checkout-cone-mode: false
+        path: ${{ fromJSON(steps.ext.outputs.alt3).path_dl }}
+    - if: fromJSON(steps.ext.outputs.alt3).repo != ''
+      shell: bash
+      run: |
+        # Display Downloaded Files
+        python -m repodynamics.actions meta files
+
+    - name: 'Update Dynamic Files'
+      id: update
+      env:
+        RD_META__REPO_FULLNAME: ${{ inputs.repository }}
+        RD_META__GITHUB_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        # Get Metadata
+        rd-print "Update Dynamic Files" heading meta
+        python -m repodynamics.actions meta
