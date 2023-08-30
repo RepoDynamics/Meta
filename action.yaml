@@ -1,4 +1,4 @@
-name: 'RepoDynamics MetaUpdate'
+name: 'RepoDynamics Meta'
 description: 'Update repository metadata.'
 author: 'Armin Ariamajd'
 branding:
@@ -14,11 +14,26 @@ inputs:
     description: 'The ref to update.'
     required: false
     default: ${{ github.ref }}
+  commit:
+    description: 'Whether to commit changes.'
+    required: false
+    default: 'true'
+  summary-path:
+    description: 'Path to the summary file.'
+    required: false
+    default: '.local/reports/repodynamics/meta.md'
+  requirements-path:
+    description: 'Path to the requirements file.'
+    required: false
+    default: '.github/workflows/requirements/repodynamics.txt'
 
 outputs:
   changes:
     description: 'The changes made to the repository.'
-    value: ${{ steps.update.outputs.changes }}
+    value: ${{ steps.run.outputs.changes }}
+  commit-hash:
+    description: 'The commit hash.'
+    value: ${{ steps.run.outputs.commit_hash }}
 
 runs:
   using: "composite"
@@ -30,24 +45,13 @@ runs:
         # Initialize
         printf "\n\n$(cat ${{github.action_path}}/logo.txt)\n\n\n"
 
-    - name: 'Setup Python'
-      shell: bash
-      run: |
-        # Setup Python
-        echo -e "\033[1;30;48;2;200;120;255m Setup Python "
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-        cache: 'pip'
-        cache-dependency-path: '.github/workflows/requirements/**/*.txt'
-
     - name: 'Install RepoDynamics'
       shell: bash
       run: |
         # Install RepoDynamics
         echo -e "\033[1;30;48;2;200;120;255m Install RepoDynamics "
         echo "::group::Install RepoDynamics"
-        python -m pip install -r .github/workflows/requirements/meta.txt
+        python -m pip install -r ${{ inputs.requirements-path }}
         echo "::endgroup::"
         echo "::group::Display environment"
         python -m pip list
@@ -107,10 +111,12 @@ runs:
         python -m repodynamics.actions meta files
 
     - name: 'Update Dynamic Files'
-      id: update
+      id: run
       env:
         RD_META__REPO_FULLNAME: ${{ inputs.repository }}
         RD_META__GITHUB_TOKEN: ${{ github.token }}
+        RD_META__COMMIT: ${{ inputs.commit }}
+        RD_META__SUMMARY_PATH: ${{ inputs.summary-path }}
       shell: bash
       run: |
         # Get Metadata
