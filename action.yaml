@@ -33,7 +33,7 @@ outputs:
     value: ${{ steps.run.outputs.changes }}
   commit-hash:
     description: 'The commit hash.'
-    value: ${{ steps.run.outputs.commit_hash }}
+    value: ${{ steps.run.outputs.commit-hash }}
 
 runs:
   using: "composite"
